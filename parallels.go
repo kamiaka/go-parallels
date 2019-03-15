@@ -30,9 +30,9 @@ func Do(fn func(i int) error, n int, opts ...Option) error {
 func (g *group) Do(f func(i int) error) error {
 	ch := make(chan int, g.concurrent)
 
-	c := new(int64)
+	cnt := new(int64)
 
-	var skip bool
+	errCnt := new(int32)
 
 	for i := 0; i < g.parallels; i++ {
 		g.Go(func() error {
@@ -41,12 +41,12 @@ func (g *group) Do(f func(i int) error) error {
 				<-ch
 			}()
 
-			if skip {
+			if atomic.LoadInt32(errCnt) != 0 {
 				return nil
 			}
 
-			if err := f(int(atomic.AddInt64(c, 1) - 1)); err != nil {
-				skip = true
+			if err := f(int(atomic.AddInt64(cnt, 1) - 1)); err != nil {
+				atomic.AddInt32(errCnt, 1)
 				return err
 			}
 
