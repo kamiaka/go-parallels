@@ -17,6 +17,7 @@ func Example() {
 		fmt.Printf("#%v: end %v, %v\n", i, ls[i], sinceSec(start))
 		return nil
 	}, len(ls))
+
 	// Output:
 	// #0: end A, 1s
 	// #1: end B, 2s
@@ -35,6 +36,7 @@ func ExampleDo_withConcurrent() {
 		fmt.Printf("#%v: end %v, %v\n", i, ls[i], sinceSec(start))
 		return nil
 	}, len(ls), parallels.Concurrent(2))
+
 	// Output:
 	// #0: end A, 1s
 	// #1: end B, 2s
@@ -67,6 +69,7 @@ func ExampleDo_withContext() {
 		}
 		return nil
 	}, len(ls), ctxOpt)
+
 	// Unordered Output:
 	// #0: end A, 1s
 	// #1: end B, 2s
@@ -91,6 +94,7 @@ func ExampleDo_withError() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	// Output:
 	// #0: end A, 1s
 	// #1: end B, 2s
