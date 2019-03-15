@@ -1,42 +1,58 @@
 package parallels
 
 import (
+	"sync/atomic"
+
 	"golang.org/x/sync/errgroup"
 )
 
-type parallels struct {
-	repeat    int
-	parallels int
-	group     *errgroup.Group
+type group struct {
+	*errgroup.Group
+	parallels  int
+	concurrent int
 }
 
-func Do(fn func(i int) error, repeat int, opts ...Option) error {
-	p := &parallels{
-		repeat:    repeat,
-		parallels: repeat,
-		group:     &errgroup.Group{},
+// Do executes function in parallel n times.
+func Do(fn func(i int) error, n int, opts ...Option) error {
+	g := &group{
+		Group:      &errgroup.Group{},
+		parallels:  n,
+		concurrent: n,
 	}
 
 	for _, opt := range opts {
-		opt(p)
+		opt(g)
 	}
 
-	return p.Do(fn)
+	return g.Do(fn)
 }
 
-func (p *parallels) Do(fn func(i int) error) error {
-	ch := make(chan int, p.parallels)
+func (g *group) Do(f func(i int) error) error {
+	ch := make(chan int, g.concurrent)
 
-	for i := 0; i < p.repeat; i++ {
-		p.group.Go(func() error {
+	c := new(int64)
+
+	var skip bool
+
+	for i := 0; i < g.parallels; i++ {
+		g.Go(func() error {
 			ch <- 1
 			defer func() {
 				<-ch
 			}()
 
-			return fn(i)
+			if skip {
+				return nil
+			}
+
+			if err := f(int(atomic.AddInt64(c, 1) - 1)); err != nil {
+				skip = true
+				return err
+			}
+
+			return nil
 		})
 	}
 
-	return p.group.Wait()
+	return g.Wait()
 }
