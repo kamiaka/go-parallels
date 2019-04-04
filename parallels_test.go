@@ -103,6 +103,21 @@ func ExampleDo_withError() {
 	// #2: an error occurred C 4s
 }
 
+func ExampleDo_withPanic() {
+	err := parallels.Do(func(i int) error {
+		if i == 4 {
+			panic("It is bad luck to choose one of four things!")
+		}
+		return nil
+	}, 10)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Output:
+	// caught panic in goroutine: It is bad luck to choose one of four things!
+}
+
 // sec converts and returns a given integer into seconds.
 // Note: tests emulates 1 / 10 seconds as 1 second.
 func sec(i int) time.Duration {
