@@ -35,9 +35,14 @@ func (g *group) Do(f func(i int) error) error {
 	errCnt := new(int32)
 
 	for i := 0; i < g.parallels; i++ {
-		g.Go(func() error {
+		g.Go(func() (err error) {
 			ch <- 1
 			defer func() {
+				if r := recover(); r != nil {
+					err = &Panic{
+						Value: r,
+					}
+				}
 				<-ch
 			}()
 
